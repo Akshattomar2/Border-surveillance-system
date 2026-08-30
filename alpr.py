@@ -15,6 +15,8 @@ Usage (inside detector.py):
     draw_plates(frame, plates)
 """
 
+import statistics
+
 import cv2
 from fast_alpr import ALPR
 
@@ -52,7 +54,16 @@ def detect_plates(alpr_model, frame):
     plates = []
 
     for result in raw_results:
-        ocr_confidence = float(result.ocr.confidence)
+        # fast-alpr returns a per-character confidence list (not a single
+        # number), so average across characters to get one plate-level score.
+        raw_confidence = result.ocr.confidence
+        if raw_confidence is None:
+            continue
+        ocr_confidence = (
+            statistics.mean(raw_confidence)
+            if isinstance(raw_confidence, list)
+            else float(raw_confidence)
+        )
         if ocr_confidence < PLATE_CONFIDENCE_THRESHOLD:
             continue
 
