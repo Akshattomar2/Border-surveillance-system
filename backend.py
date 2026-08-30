@@ -25,7 +25,7 @@ import uuid
 import csv as csvmod
 
 import cv2
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import Response, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -82,6 +82,35 @@ def get_video_path(video_id: str) -> str:
 @app.get("/api/videos")
 def list_videos():
     return [{"video_id": vid, "name": info["name"]} for vid, info in VIDEO_REGISTRY.items()]
+
+
+@app.get("/api/authorized-people")
+def list_authorized_people():
+    return [{k: person.get(k, "") for k in ("person_id", "name", "role")} for person in load_authorized_people()]
+
+
+@app.post("/api/authorized-people")
+async def enroll_authorized_person(
+    name: str = Form(...), person_id: str = Form(...), role: str = Form(""),
+    photos: list[UploadFile] = File(...),
+):
+    import numpy as np
+    from detector import detect_faces, face_embedding, save_authorized_person
+    embeddings = []
+    for photo in photos[:5]:
+        image = cv2.imdecode(np.frombuffer(await photo.read(), np.uint8), cv2.IMREAD_COLOR)
+        detections = [] if image is None else detect_faces(image)
+        if len(detections) == 1:
+            embedding = face_embedding(image, detections[0])
+            if embedding:
+                embeddings.append(embedding)
+    if not name.strip() or not person_id.strip() or not embeddings:
+        raise HTTPException(status_code=400, detail="Provide name, ID, and clear photos with exactly one face each")
+    save_authorized_person({
+        "person_id": person_id.strip(), "name": name.strip(), "role": role.strip(),
+        "embedding": np.mean(np.asarray(embeddings), axis=0).tolist(),
+    })
+    return {"status": "saved", "person_id": person_id.strip(), "photos_used": len(embeddings)}
 
 
 @app.post("/api/upload")

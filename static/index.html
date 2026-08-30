@@ -152,6 +152,17 @@
         <input type="file" id="videoUpload" accept="video/*">
         <span id="uploadStatus" style="font-size:0.8rem; color:#B8C4BC;"></span>
       </div>
+
+      <div class="upload-row" style="margin-top:24px; display:block;">
+        <h3>👤 Authorized Persons</h3>
+        <input id="personName" placeholder="Full name">
+        <input id="personId" placeholder="Person ID">
+        <input id="personRole" placeholder="Role / unit">
+        <input type="file" id="personPhotos" accept="image/*" multiple>
+        <button id="btnSavePerson">Add person</button>
+        <span id="personStatus" style="font-size:0.8rem; color:#B8C4BC;"></span>
+        <div id="peopleList" style="font-size:0.8rem; margin-top:8px;"></div>
+      </div>
     </div>
 
     <div class="panel">
@@ -185,6 +196,14 @@ const statModel = document.getElementById("statModel");
 const statFrame = document.getElementById("statFrame");
 const uploadStatus = document.getElementById("uploadStatus");
 const videoSelect = document.getElementById("videoSelect");
+const personStatus = document.getElementById("personStatus");
+const peopleList = document.getElementById("peopleList");
+
+async function loadAuthorizedPeople() {
+  const res = await fetch(`${API}/authorized-people`);
+  const people = await res.json();
+  peopleList.textContent = people.length ? "Enrolled: " + people.map(p => `${p.name} (${p.person_id})`).join(", ") : "No authorized people enrolled.";
+}
 
 async function loadModelInfo() {
   const res = await fetch(`${API}/model_info`);
@@ -331,6 +350,20 @@ document.getElementById("videoUpload").addEventListener("change", async (e) => {
   await showFrame(0, false);
 });
 
+document.getElementById("btnSavePerson").addEventListener("click", async () => {
+  const photos = document.getElementById("personPhotos").files;
+  const form = new FormData();
+  form.append("name", document.getElementById("personName").value);
+  form.append("person_id", document.getElementById("personId").value);
+  form.append("role", document.getElementById("personRole").value);
+  for (const photo of photos) form.append("photos", photo);
+  personStatus.textContent = "Saving...";
+  const res = await fetch(`${API}/authorized-people`, { method: "POST", body: form });
+  const data = await res.json();
+  personStatus.textContent = res.ok ? `Saved (${data.photos_used} photo(s))` : (data.detail || "Could not save");
+  if (res.ok) loadAuthorizedPeople();
+});
+
 // Initial load
 (async () => {
   await loadModelInfo();
@@ -338,6 +371,7 @@ document.getElementById("videoUpload").addEventListener("change", async (e) => {
   await loadVideoInfo();
   await showFrame(0, false);
   await refreshAlerts();
+  await loadAuthorizedPeople();
 })();
 </script>
 </body>
