@@ -272,6 +272,12 @@ def run():
     print("Loading YOLOv8 model (first run downloads weights)...")
     model = YOLO(MODEL_NAME)
 
+    print("Loading ALPR model (first run downloads weights)...")
+    from alpr import get_alpr
+    alpr_model = get_alpr()
+
+    authorized_people = load_authorized_people()
+
     cap = cv2.VideoCapture(VIDEO_SOURCE)
     if not cap.isOpened():
         print(f"ERROR: could not open video source '{VIDEO_SOURCE}'")
@@ -280,6 +286,7 @@ def run():
     frame_count = 0
     alert_cooldown = {}
     motion_state = {}
+    plate_cooldown = {}
     print("Press 'q' to quit the preview window.")
 
     while True:
@@ -292,7 +299,8 @@ def run():
         if frame_count % 3 != 0:   # skip frames to keep things fast (process ~1 of every 3)
             continue
 
-        annotated = process_frame(model, frame, frame_count, alert_cooldown, motion_state)
+        annotated = process_frame(model, frame, frame_count, alert_cooldown, motion_state,
+                                  authorized_people, alpr_model, plate_cooldown)
         cv2.imshow("IBVAP Prototype - Border Video Analytics", annotated)
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
