@@ -40,8 +40,8 @@ Advanced features like facial recognition, ANPR, and intrusion detection usually
 | 🌙 Night-time movement detection | ✅ |
 | 📊 Real-time alert logging (CSV + snapshots) | ✅ |
 | 📹 Multi-video upload and sequential analysis | ✅ |
-| 🚗 Automatic Number Plate Recognition (ANPR) | 🔜 Planned |
-| 🧍 Advanced face recognition / liveness controls | 🔜 Planned |
+| 🚗 Automatic Number Plate Recognition (ANPR) | ✅ |
+| 🧍 Advanced face recognition / liveness controls | ✅ |
 
 ---
 
